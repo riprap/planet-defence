@@ -242,6 +242,15 @@ class SuperSprite(pygame.sprite.Sprite):
         if self.rotation < 0:
             self.rotation = 360 - amt
     
+    def setRotation(self, amt):
+        """set the visual orientation by given
+           number of degrees."""
+        self.rotation = amt
+        if self.rotation > 360:
+            self.rotation = amt
+        if self.rotation < 0:
+            self.rotation = 360 - amt
+
     def setImage (self, image):
         """ loads the given file name as the master image
             default setting should be facing east.  Image

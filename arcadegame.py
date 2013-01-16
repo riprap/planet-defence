@@ -80,13 +80,28 @@ class Bullet(gameEngine.SuperSprite):
         self.setPosition ((-100, -100))
         self.setSpeed(0)
 
+
+class Scoreboard(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.health = 5
+        self.score = 0
+        self.font = pygame.font.SysFont("None", 50)
+        
+    def update(self):
+        self.text = "health: %d, score: %d" % (self.health, self.score)
+        self.image = self.font.render(self.text, 1, (255, 255, 0))
+        self.rect = self.image.get_rect()
+
 class Game(gameEngine.Scene):
     def __init__(self):
         gameEngine.Scene.__init__(self)
         self.character = Character(self)
         self.bullet = Bullet(self)
-        self.sprites = [self.character, self.bullet]
+        self.scoreboard = Scoreboard()
+        self.sprites = [self.character, self.bullet, self.scoreboard]
 
+"""
 def startScreen(score):
     insFont = pygame.font.SysFont(None, 50)
     insLabels = []
@@ -115,17 +130,13 @@ def startScreen(score):
     clock = pygame.time.Clock()   
     pygame.mouse.set_visible(True)
     return donePlaying
-        
+"""        
 
 def main():
-    """ gotta fix this part
-
-    donePlaying = False
+    """donePlaying = False
     score = 0
-    while not donePlaying:
-        donePlaying = startScreen(score)
-    """
-
+    startScreen(score)"""
+    
     game = Game()
     game.start()
 

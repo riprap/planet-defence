@@ -12,7 +12,7 @@
 
     Project: 1 - The Arcade Game
 """
-import pygame, gameEngine, time, math
+import pygame, gameEngine, time, math, random
 
 class Character(gameEngine.SuperSprite):
     def __init__(self, scene):
@@ -92,6 +92,12 @@ class Scoreboard(gameEngine.SuperSprite):
         self.image = self.font.render(self.text, 1, (255, 255, 0))
         self.rect = self.image.get_rect()
 
+class Enemy(gameEngine.SuperSprite):
+    def __init__(self, scene):
+        gameEngine.SuperSprite.__init__(self, scene)
+        self.setImage("images/electrode.gif")
+        self.x = random.randint(100,700)
+        self.y = random.randint(100,500)
 
 class Planet(gameEngine.SuperSprite):
     def __init__(self, scene):
@@ -108,6 +114,11 @@ class Game(gameEngine.Scene):
         self.bullet = Bullet(self)
         self.scoreboard = Scoreboard(self)
         self.planet = Planet(self)
+        self.enemies = []
+        for i in range(5):
+            self.enemies.append(Enemy(self))
+        self.enemyGroup = self.makeSpriteGroup(self.enemies)
+        self.addGroup(self.enemyGroup)
         self.sprites = [self.character, self.bullet, self.scoreboard, self.planet]
 
 def startScreen(score):

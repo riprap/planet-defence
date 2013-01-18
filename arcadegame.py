@@ -142,7 +142,7 @@ def startScreen(score):
 
 def main():
     game = Game()
-#    game.start()
+    game.start()
 
 
 

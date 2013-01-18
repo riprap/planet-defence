@@ -17,7 +17,7 @@ import pygame, gameEngine, time, math
 class Character(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
-        self.setImage("images/character.bmp")
+        self.setImage("images/ship.bmp")
         self.setSpeed(0)
         self.setAngle(0)
     
@@ -64,81 +64,87 @@ class Bullet(gameEngine.SuperSprite):
             mouse_pos = pygame.mouse.get_pos()
             self.setPosition((self.scene.character.x, self.scene.character.y))
             self.setSpeed(50)
-
             """
-            getting angle to shoot from spaceship
+            getting angle to shoot from spaceship, since gameEngine.dirTo doesn't seem to work
             """
             dy = mouse_pos[1] - self.scene.character.y
             dx = mouse_pos[0] - self.scene.character.x
             angle = -math.degrees(math.atan2(dy,dx))
-            print(angle)
             #get character x and character y, and mouse_pos[0], mouse_pos[1]
             self.setAngle(angle)
-        else:
-            print("Cant fire that quickly")
     def reset(self):
         self.setPosition ((-100, -100))
         self.setSpeed(0)
 
 
-class Scoreboard(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.health = 5
+class Scoreboard(gameEngine.SuperSprite):
+    def __init__(self, scene):
+        gameEngine.SuperSprite.__init__(self, scene)
+        self.health = 3
         self.score = 0
         self.font = pygame.font.SysFont("None", 50)
         
     def update(self):
-        self.text = "health: %d, score: %d" % (self.health, self.score)
+        health = ""
+        for i in range(0, int(self.health)):
+            health += "+"
+        self.text = "Score: %d %s" % (self.score, health)
         self.image = self.font.render(self.text, 1, (255, 255, 0))
         self.rect = self.image.get_rect()
+
+
+class Planet(gameEngine.SuperSprite):
+    def __init__(self, scene):
+        gameEngine.SuperSprite.__init__(self, scene)
+        self.setImage("images/planet.gif")
+        #puts planet in the middle of the screen
+        self.x = 375
+        self.y = 275
 
 class Game(gameEngine.Scene):
     def __init__(self):
         gameEngine.Scene.__init__(self)
         self.character = Character(self)
         self.bullet = Bullet(self)
-        self.scoreboard = Scoreboard()
-        self.sprites = [self.character, self.bullet, self.scoreboard]
+        self.scoreboard = Scoreboard(self)
+        self.planet = Planet(self)
+        self.sprites = [self.character, self.bullet, self.scoreboard, self.planet]
 
-"""
 def startScreen(score):
     insFont = pygame.font.SysFont(None, 50)
     insLabels = []
     instructions = (
-    "Mail Pilot.     Last score: %d" % score ,
-    "Instructions:  You are a mail pilot,",
-    "delivering mail to the islands.",
-    "",
-    "Fly over an island to drop the mail,",
-    "but be careful not to fly too close",    
-    "to the clouds. Your plane will fall ",
-    "apart if it is hit by lightning too",
-    "many times. Steer with the mouse.",
-    "",
-    "good luck!",
-    "",
-    "click to start, escape to quit..."
+    "Instructions"
     )
     
     for line in instructions:
         tempLabel = insFont.render(line, 1, (255, 255, 0))
         insLabels.append(tempLabel)
-    
-    donePlaying = True
+ 
     keepGoing = True
-    clock = pygame.time.Clock()   
-    pygame.mouse.set_visible(True)
+    clock = pygame.time.Clock()
+    pygame.mouse.set_visible(False)
+    while keepGoing:
+        clock.tick(30)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                keepGoing = False
+                donePlaying = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                keepGoing = False
+                donePlaying = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    keepGoing = False
+                    donePlaying = True
     return donePlaying
-"""        
+       
 
 def main():
-    """donePlaying = False
-    score = 0
-    startScreen(score)"""
-    
     game = Game()
-    game.start()
+#    game.start()
+
+
 
 if __name__ == "__main__":
     main()

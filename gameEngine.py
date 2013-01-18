@@ -467,7 +467,7 @@ class Scene(object):
             set up a sample sprite for testing
         """
         pygame.init()
-        self.screen = pygame.display.set_mode((640, 480))
+        self.screen = pygame.display.set_mode((800,600))
         self.background = pygame.Surface(self.screen.get_size())
         self.background.fill((0, 0, 0)) #black background
         

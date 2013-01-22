@@ -81,7 +81,7 @@ class SuperSprite(pygame.sprite.Sprite):
         self.speed = 0
         self.maxSpeed = 10
         self.minSpeed = -3
-        self.boundAction = self.WRAP
+        self.boundAction = self.BOUNCE
         self.pressed = False
         self.oldCenter = (100, 100)
     
@@ -176,7 +176,7 @@ class SuperSprite(pygame.sprite.Sprite):
                 self.dy *= -1
                 
             self.updateVector()
-            self.rotation = self.dir
+            #self.rotation = self.dir
         
         elif self.boundAction == self.STOP:
             if offScreen:

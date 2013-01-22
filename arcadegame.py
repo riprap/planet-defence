@@ -5,10 +5,13 @@
     
     Last modified by: Nolan Knill
     
-    Date last modified: January 11, 2011
+    Date last modified: January 22, 2013
     
-    Program description: Arcadegame.py is an arcade adventure game where 
-                         the player tries 
+    Program description: Arcadegame.py is an space arcade planet
+                         defense game. The player takes control
+                         of a spaceship, and must defend his/her
+                         planet from incoming self-destructing
+                         Electrodes.
 
     Project: 1 - The Arcade Game
 """
@@ -23,27 +26,47 @@ class Character(gameEngine.SuperSprite):
     
     def checkEvents(self):
         speed = 10
+        
+        avatar_width = self.image.get_width()
+        avatar_height = self.image.get_height()
+
         keys = pygame.key.get_pressed()
         mouse = pygame.mouse.get_pressed()
+        
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.setDX(-speed)
             self.setDY(0)
             self.setRotation(180)
+            if self.x > avatar_width: 
+                self.setDX(-speed)
+            else:
+                self.setDX(0)
         elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.setDX(speed)
             self.setDY(0)
-            self.setRotation(0)      
+            self.setRotation(0)
+            if self.x < self.screen.get_width() - avatar_width:
+                self.setDX(speed)
+            else:
+                self.setDX(0)
+        
         elif keys[pygame.K_w] or keys[pygame.K_UP]:
-            self.setDY(-speed)
             self.setDX(0)
             self.setRotation(90)
+            if self.y > avatar_height:            
+                self.setDY(-speed)
+            else:
+                self.setDY(0)
         elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            self.setDY(speed)
             self.setDX(0)
             self.setRotation(270)
+            if self.y < self.screen.get_height() - avatar_height:
+                self.setDY(speed)
+            else:
+                self.setDY(0)
+        
         else:
             self.setDX(0)
             self.setDY(0)
+        
         if mouse[0]:
             self.scene.bullet.fire()
 
@@ -63,14 +86,13 @@ class Bullet(gameEngine.SuperSprite):
             self.last_shot = time.clock()
             mouse_pos = pygame.mouse.get_pos()
             self.setPosition((self.scene.character.x, self.scene.character.y))
-            self.setSpeed(50)
+            self.setSpeed(25)
             """
             getting angle to shoot from spaceship, since gameEngine.dirTo doesn't seem to work
             """
             dy = mouse_pos[1] - self.scene.character.y
             dx = mouse_pos[0] - self.scene.character.x
             angle = -math.degrees(math.atan2(dy,dx))
-            #get character x and character y, and mouse_pos[0], mouse_pos[1]
             self.setAngle(angle)
     
     def reset(self):
@@ -86,7 +108,7 @@ class Scoreboard(gameEngine.SuperSprite):
         
     def update(self):
         health = ""
-        for i in range(0, int(self.planet.getHealth())):
+        for i in range(0,3):
             health += "+"
         self.text = "Score: %d %s" % (self.score, health)
         self.image = self.font.render(self.text, 1, (255, 255, 0))
@@ -95,43 +117,39 @@ class Scoreboard(gameEngine.SuperSprite):
 class Enemy(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
-        self.setImage("images/electrode.gif")
-        self.start_position()
+        self.reset()
     
     def reset(self):
-        """ change attributes randomly """
-        
-        #set random position
-        x = random.randint(10, self.screen.get_width())
-        y = random.randint(10, self.screen.get_height())
-        self.setPosition((x, y))
-        
-        #set random size
-        scale = random.randint(10, 40)
-        self.setImage("images/electrode.gif")
-
-    def start_position(self):
         quadrant = random.randint(1,4) #top, right, bottom, left
         if quadrant == 1: #(top)
-            self.y = 25
-            self.x = random.randint(100,700)
+            x = random.randint(100,700)
+            y = 25
         if quadrant == 2:
-            self.y = random.randint(100,500)
-            self.x = 775
+            x = 775
+            y = random.randint(100,500)
         if quadrant == 3:
-            self.y = 575
-            self.x = random.randint(100,700) 
+            y = 575
+            x = random.randint(100,700) 
         elif quadrant == 4:
-            self.y = random.randint(100,500)
-            self.x = 25
+            y = random.randint(100,500)
+            x = 25
+        self.setPosition((x,y))
+        self.setSpeed(random.uniform(1,2.8))
+
+        #self.getAngle(self.x,self.y)
+        self.setImage("images/electrode.gif")
+
 
 class Planet(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
         self.setImage("images/planet.gif")
-        #puts planet in the middle of the screen
-        self.x = 375
-        self.y = 275
+        avatar_width = 37.5
+        avatar_height = 37.5
+        center_x = self.screen.get_width()/2
+        center_y = self.screen.get_height()/2
+        self.x = center_x - avatar_width
+        self.y = center_y - avatar_height
         self.health = 5
 
     def changeHealth(self, amount):
@@ -139,6 +157,7 @@ class Planet(gameEngine.SuperSprite):
 
     def getHealth(self):
         return self.health
+
 class Game(gameEngine.Scene):
     def __init__(self, score=0):
         gameEngine.Scene.__init__(self)
@@ -159,21 +178,22 @@ class Game(gameEngine.Scene):
         shipHitEnemy = self.character.collidesGroup(self.enemies)
         if shipHitEnemy:
             shipHitEnemy.reset()
-            print("ello govna")
+            self.
 
-        enemyHitPlanet = self.character.collidesWith(self.planet)
+        enemyHitPlanet = self.planet.collidesGroup(self.enemies)
         if enemyHitPlanet:
-            print ("enemyHitPlanet")
+            enemyHitPlanet.reset()
 
         bulletHitPlanet = self.bullet.collidesWith(self.planet)
-        enemyHitPlanet = self.bullet.collidesWith(self.planet)
-        if bulletHitPlanet or enemyHitPlanet:
-            self.planet.changeHealth(-1)
+        if bulletHitPlanet:
+            #explosion
+            #reduce health
+            self.bullet.reset()
 
         bulletHitEnemy = self.bullet.collidesGroup(self.enemies)
         if bulletHitEnemy:
-            print("BulletHitEnemy")
             bulletHitEnemy.reset()
+            self.bullet.reset()
 
     def instructions(self, score):
         print("score")

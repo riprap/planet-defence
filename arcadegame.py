@@ -59,7 +59,7 @@ class Bullet(gameEngine.SuperSprite):
 
     def fire(self):
         current_time = time.clock()
-        if (current_time > self.last_shot + 0.25) or (self.last_shot == 0):
+        if (current_time > self.last_shot + 0.50) or (self.last_shot == 0):
             self.last_shot = time.clock()
             mouse_pos = pygame.mouse.get_pos()
             self.setPosition((self.scene.character.x, self.scene.character.y))
@@ -72,6 +72,7 @@ class Bullet(gameEngine.SuperSprite):
             angle = -math.degrees(math.atan2(dy,dx))
             #get character x and character y, and mouse_pos[0], mouse_pos[1]
             self.setAngle(angle)
+    
     def reset(self):
         self.setPosition ((-100, -100))
         self.setSpeed(0)
@@ -80,13 +81,12 @@ class Bullet(gameEngine.SuperSprite):
 class Scoreboard(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
-        self.health = 3
         self.score = 0
         self.font = pygame.font.SysFont("None", 50)
         
     def update(self):
         health = ""
-        for i in range(0, int(self.health)):
+        for i in range(0, int(self.planet.getHealth())):
             health += "+"
         self.text = "Score: %d %s" % (self.score, health)
         self.image = self.font.render(self.text, 1, (255, 255, 0))
@@ -96,8 +96,34 @@ class Enemy(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
         self.setImage("images/electrode.gif")
-        self.x = random.randint(100,700)
-        self.y = random.randint(100,500)
+        self.start_position()
+    
+    def reset(self):
+        """ change attributes randomly """
+        
+        #set random position
+        x = random.randint(10, self.screen.get_width())
+        y = random.randint(10, self.screen.get_height())
+        self.setPosition((x, y))
+        
+        #set random size
+        scale = random.randint(10, 40)
+        self.setImage("images/electrode.gif")
+
+    def start_position(self):
+        quadrant = random.randint(1,4) #top, right, bottom, left
+        if quadrant == 1: #(top)
+            self.y = 25
+            self.x = random.randint(100,700)
+        if quadrant == 2:
+            self.y = random.randint(100,500)
+            self.x = 775
+        if quadrant == 3:
+            self.y = 575
+            self.x = random.randint(100,700) 
+        elif quadrant == 4:
+            self.y = random.randint(100,500)
+            self.x = 25
 
 class Planet(gameEngine.SuperSprite):
     def __init__(self, scene):
@@ -106,10 +132,18 @@ class Planet(gameEngine.SuperSprite):
         #puts planet in the middle of the screen
         self.x = 375
         self.y = 275
+        self.health = 5
 
+    def changeHealth(self, amount):
+        self.health += amount
+
+    def getHealth(self):
+        return self.health
 class Game(gameEngine.Scene):
-    def __init__(self):
+    def __init__(self, score=0):
         gameEngine.Scene.__init__(self)
+        keepGoing = True
+        self.instructions(score)
         self.character = Character(self)
         self.bullet = Bullet(self)
         self.scoreboard = Scoreboard(self)
@@ -121,35 +155,28 @@ class Game(gameEngine.Scene):
         self.addGroup(self.enemyGroup)
         self.sprites = [self.character, self.bullet, self.scoreboard, self.planet]
 
-def startScreen(score):
-    insFont = pygame.font.SysFont(None, 50)
-    insLabels = []
-    instructions = (
-    "Instructions"
-    )
-    
-    for line in instructions:
-        tempLabel = insFont.render(line, 1, (255, 255, 0))
-        insLabels.append(tempLabel)
- 
-    keepGoing = True
-    clock = pygame.time.Clock()
-    pygame.mouse.set_visible(False)
-    while keepGoing:
-        clock.tick(30)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                keepGoing = False
-                donePlaying = True
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                keepGoing = False
-                donePlaying = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    keepGoing = False
-                    donePlaying = True
-    return donePlaying
-       
+    def update(self):
+        shipHitEnemy = self.character.collidesGroup(self.enemies)
+        if shipHitEnemy:
+            shipHitEnemy.reset()
+            print("ello govna")
+
+        enemyHitPlanet = self.character.collidesWith(self.planet)
+        if enemyHitPlanet:
+            print ("enemyHitPlanet")
+
+        bulletHitPlanet = self.bullet.collidesWith(self.planet)
+        enemyHitPlanet = self.bullet.collidesWith(self.planet)
+        if bulletHitPlanet or enemyHitPlanet:
+            self.planet.changeHealth(-1)
+
+        bulletHitEnemy = self.bullet.collidesGroup(self.enemies)
+        if bulletHitEnemy:
+            print("BulletHitEnemy")
+            bulletHitEnemy.reset()
+
+    def instructions(self, score):
+        print("score")
 
 def main():
     game = Game()

@@ -71,6 +71,7 @@ class Character(gameEngine.SuperSprite):
             self.scene.bullet.fire()
 
 
+
 class Bullet(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
@@ -101,42 +102,52 @@ class Bullet(gameEngine.SuperSprite):
 
 
 class Scoreboard(gameEngine.SuperSprite):
-    def __init__(self, scene):
+    def __init__(self, scene, start_health=5):
         gameEngine.SuperSprite.__init__(self, scene)
         self.score = 0
+        self.health = start_health + 1
         self.font = pygame.font.SysFont("None", 50)
         
     def update(self):
-        health = ""
-        for i in range(0,3):
-            health += "+"
-        self.text = "Score: %d %s" % (self.score, health)
+        health = self.health
+        self.text = "Score: %d Health: %d" % (self.score, health)
         self.image = self.font.render(self.text, 1, (255, 255, 0))
         self.rect = self.image.get_rect()
+
+    def change(self, d_health, d_score):
+        self.health += d_health
+        self.score += d_score
 
 class Enemy(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
         self.reset()
     
+    def get_coordinates(self):
+        coordinates = [self.x, self.y]
+        return coordinates
+
     def reset(self):
+        width = self.screen.get_width()
+        height = self.screen.get_height()
         quadrant = random.randint(1,4) #top, right, bottom, left
         if quadrant == 1: #(top)
-            x = random.randint(100,700)
-            y = 25
+            x = random.randint(-100,width+100)
+            y = 0
         if quadrant == 2:
-            x = 775
-            y = random.randint(100,500)
+            x = width
+            y = random.randint(-100,height+100)
         if quadrant == 3:
-            y = 575
-            x = random.randint(100,700) 
+            y = height
+            x = random.randint(-100,width+100) 
         elif quadrant == 4:
-            y = random.randint(100,500)
-            x = 25
-        self.setPosition((x,y))
-        self.setSpeed(random.uniform(1,2.8))
+            y = random.randint(-100,height+100)
+            x = 0
 
-        #self.getAngle(self.x,self.y)
+        self.setPosition((x,y))
+        self.setSpeed(random.uniform(0.4,0.6))
+        angle=self.dirTo((self.screen.get_width()/2, self.screen.get_height()/2))
+        self.setAngle(angle)
         self.setImage("images/electrode.gif")
 
 
@@ -150,57 +161,112 @@ class Planet(gameEngine.SuperSprite):
         center_y = self.screen.get_height()/2
         self.x = center_x - avatar_width
         self.y = center_y - avatar_height
-        self.health = 5
 
-    def changeHealth(self, amount):
-        self.health += amount
+class Explosion(gameEngine.SuperSprite):
+    def __init__(self,scene):
+        gameEngine.SuperSprite.__init__(self, scene)
+        self.setImage("images/explosion.png")
+        self.imageMaster = pygame.transform.scale(self.imageMaster, (30, 30))
+        self.setBoundAction(self.HIDE)
+        self.explosion_time = 0
+        self.reset()
 
-    def getHealth(self):
-        return self.health
+    def reset(self, x=-100, y=-100):
+        self.setPosition ((x, y))
+        self.setSpeed(0)
+
+    #def 
 
 class Game(gameEngine.Scene):
     def __init__(self, score=0):
         gameEngine.Scene.__init__(self)
-        keepGoing = True
-        self.instructions(score)
         self.character = Character(self)
         self.bullet = Bullet(self)
         self.scoreboard = Scoreboard(self)
         self.planet = Planet(self)
+        self.explosion = Explosion(self)
         self.enemies = []
         for i in range(5):
             self.enemies.append(Enemy(self))
         self.enemyGroup = self.makeSpriteGroup(self.enemies)
         self.addGroup(self.enemyGroup)
-        self.sprites = [self.character, self.bullet, self.scoreboard, self.planet]
+        self.sprites = [self.explosion, self.character, self.bullet, self.scoreboard, self.planet]
+        self.counter = 0
 
     def update(self):
         shipHitEnemy = self.character.collidesGroup(self.enemies)
-        if shipHitEnemy:
-            shipHitEnemy.reset()
-            self.
+        shipHitPlanet = self.character.collidesWith(self.planet)
+        if shipHitEnemy or shipHitPlanet:
+            self.counter += 1
+            if self.counter>2:
+               time.sleep(2)
+               self.stop()
+
 
         enemyHitPlanet = self.planet.collidesGroup(self.enemies)
         if enemyHitPlanet:
+            enemy = enemyHitPlanet.get_coordinates()
+            self.explosion.reset(enemy[0], enemy[1])
+            self.scoreboard.change(-1,-100)
             enemyHitPlanet.reset()
+            if self.scoreboard.health == 0:
+                self.stop()
+            
 
         bulletHitPlanet = self.bullet.collidesWith(self.planet)
         if bulletHitPlanet:
-            #explosion
-            #reduce health
+            self.explosion.reset(self.bullet.x, self.bullet.y)
+            self.scoreboard.change(-1,-100)
             self.bullet.reset()
+            if self.scoreboard.health == 0:
+                self.stop()
 
         bulletHitEnemy = self.bullet.collidesGroup(self.enemies)
         if bulletHitEnemy:
+            self.explosion.reset(self.bullet.x, self.bullet.y)
+            self.scoreboard.change(0,200)
             bulletHitEnemy.reset()
             self.bullet.reset()
 
-    def instructions(self, score):
-        print("score")
+    def get_score(self):
+        return self.scoreboard.score
+
+
+class Start(gameEngine.Scene):
+    def __init__(self, score = 0):
+        gameEngine.Scene.__init__(self)
+        self.sprites = [self.instructions()]
+        self.difficulty = 0
+    
+    def instructions(self):
+        self.text = "Instructions"
+        self.image = self.font.render(self.text, 1, (255, 255, 0))
+        self.rect = self.image.get_rect()
+        return self.rect
+
+    def get_difficulty(self):
+        print(self.difficulty)
+        return self.difficulty
+
+    def checkEvents(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_k]:
+            self.difficulty = 1
+            self.get_difficulty()
+        elif keys[pygame.K_b]:
+            self.difficulty = 2
+            self.get_difficulty()
+        elif keys[pygame.K_c]:
+            self.difficulty = 3
+            self.get_difficulty()
 
 def main():
+    #start = Start()
+    #start.start()
+    
     game = Game()
     game.start()
+       # keepGoing = False
 
 
 

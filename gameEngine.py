@@ -81,7 +81,7 @@ class SuperSprite(pygame.sprite.Sprite):
         self.speed = 0
         self.maxSpeed = 10
         self.minSpeed = -3
-        self.boundAction = self.BOUNCE
+        self.boundAction = self.CONTINUE
         self.pressed = False
         self.oldCenter = (100, 100)
     

@@ -98,6 +98,10 @@ class SuperSprite(pygame.sprite.Sprite):
         """ overwrite this method to add your own event code """
         pass
 
+    def get_coordinates(self):
+        coordinates = [self.x, self.y]
+        return coordinates
+        
     def __rotate(self):
         """ PRIVATE METHOD
             change visual orientation based on 

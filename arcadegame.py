@@ -16,6 +16,9 @@
     Project: 1 - The Arcade Game
 """
 import pygame, gameEngine, time, math, random
+pygame.mixer.init() #initialiaze pygame mixer (sound)
+global DIFFICULTY
+DIFFICULTY = 1
 
 class Character(gameEngine.SuperSprite):
     def __init__(self, scene):
@@ -80,6 +83,8 @@ class Bullet(gameEngine.SuperSprite):
         self.setBoundAction(self.HIDE)
         self.reset()
         self.last_shot = 0
+        self.sndFire = pygame.mixer.Sound("sounds/pew.ogg")
+        self.sndFire.set_volume(0.5)
 
     def fire(self):
         current_time = time.clock()
@@ -95,6 +100,7 @@ class Bullet(gameEngine.SuperSprite):
             dx = mouse_pos[0] - self.scene.character.x
             angle = -math.degrees(math.atan2(dy,dx))
             self.setAngle(angle)
+            self.sndFire.play(0)
     
     def reset(self):
         self.setPosition ((-100, -100))
@@ -122,10 +128,6 @@ class Enemy(gameEngine.SuperSprite):
     def __init__(self, scene):
         gameEngine.SuperSprite.__init__(self, scene)
         self.reset()
-    
-    def get_coordinates(self):
-        coordinates = [self.x, self.y]
-        return coordinates
 
     def reset(self):
         width = self.screen.get_width()
@@ -178,8 +180,9 @@ class Explosion(gameEngine.SuperSprite):
     #def 
 
 class Game(gameEngine.Scene):
-    def __init__(self, score=0):
+    def __init__(self):
         gameEngine.Scene.__init__(self)
+        self.setCaption("Planet Defence")
         self.character = Character(self)
         self.bullet = Bullet(self)
         self.scoreboard = Scoreboard(self)
@@ -192,6 +195,8 @@ class Game(gameEngine.Scene):
         self.addGroup(self.enemyGroup)
         self.sprites = [self.explosion, self.character, self.bullet, self.scoreboard, self.planet]
         self.counter = 0
+        self.sndBackground = pygame.mixer.Sound("sounds/background.ogg")
+        self.sndBackground.play(-1)
 
     def update(self):
         shipHitEnemy = self.character.collidesGroup(self.enemies)
@@ -199,8 +204,9 @@ class Game(gameEngine.Scene):
         if shipHitEnemy or shipHitPlanet:
             self.counter += 1
             if self.counter>2:
-               time.sleep(2)
-               self.stop()
+                ship = self.character.get_coordinates()
+                self.explosion.reset(ship[0], ship[1])
+                self.stop()
 
 
         enemyHitPlanet = self.planet.collidesGroup(self.enemies)
@@ -231,44 +237,81 @@ class Game(gameEngine.Scene):
     def get_score(self):
         return self.scoreboard.score
 
-
-class Start(gameEngine.Scene):
-    def __init__(self, score = 0):
-        gameEngine.Scene.__init__(self)
-        self.sprites = [self.instructions()]
-        self.difficulty = 0
+def instructions(score):
+    sndIntro = pygame.mixer.Sound("sounds/power.ogg")
+    if score == 1: #Post start screen instructions
+        sndIntro.play(-1)
+        instructions = (
+        "Planet Defence.",
+        "Instructions:  You are a spaceship pilot",
+        "defending our home planet of RaspberryPia.",
+        "",
+        "Select Difficulty:",
+        "Normal = 1",
+        "Hard = 2",
+        "Insane = 3"
+        )
+    else:
+        instructions = (
+        "Your home planet has perished...",
+        "",
+        "",
+        "Your final score: %d" % score
+        )
+    screen = pygame.display.set_mode((640, 480))
+    pygame.display.set_caption("Planet Defence")
+    game = Game()
+    plane = Planet(game)
     
-    def instructions(self):
-        self.text = "Instructions"
-        self.image = self.font.render(self.text, 1, (255, 255, 0))
-        self.rect = self.image.get_rect()
-        return self.rect
+    allSprites = pygame.sprite.Group(plane)
+    insFont = pygame.font.SysFont(None, 50)
+    insLabels = []    
+    for line in instructions:
+        tempLabel = insFont.render(line, 1, (0, 0, 255))
+        insLabels.append(tempLabel)
+ 
+    keepGoing = True
+    clock = pygame.time.Clock()
+    while keepGoing:
+        clock.tick(30)
+        for event in pygame.event.get():
+            keys = pygame.key.get_pressed()
+            if event.type == pygame.QUIT:
+                keepGoing = False
+                donePlaying = True
+            if keys[pygame.K_1] or keys[pygame.K_2] or keys[pygame.K_3]:
+                if keys[pygame.K_1]:
+                    DIFFICULTY = 1
+                elif keys[pygame.K_2]:
+                    DIFFICULTY = 2
+                elif keys[pygame.K_3]:
+                    DIFFICULTY = 3
+                keepGoing = False
+                donePlaying = False
+                sndIntro.stop()
+                print(DIFFICULTY)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    keepGoing = False
+                    donePlaying = True
+    
+        allSprites.update()
+        allSprites.draw(screen)
 
-    def get_difficulty(self):
-        print(self.difficulty)
-        return self.difficulty
+        for i in range(len(insLabels)):
+            screen.blit(insLabels[i], (50, 30*i))
 
-    def checkEvents(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_k]:
-            self.difficulty = 1
-            self.get_difficulty()
-        elif keys[pygame.K_b]:
-            self.difficulty = 2
-            self.get_difficulty()
-        elif keys[pygame.K_c]:
-            self.difficulty = 3
-            self.get_difficulty()
+        pygame.display.flip()
+    return donePlaying
 
 def main():
     #start = Start()
     #start.start()
-    
-    game = Game()
-    game.start()
-       # keepGoing = False
-
-
+    donePlaying = instructions(1)
+    while donePlaying == False:
+        game = Game()
+        game.start()
+        donePlaying = instructions(game.get_score())
 
 if __name__ == "__main__":
     main()
